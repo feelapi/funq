@@ -1,13 +1,13 @@
 #include <QByteArray>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
-#include <QQuickStyle>
+#include <QThread>
 
 static const char QML_SOURCE[] = R"QML(
-import QtQuick
-import QtQuick.Controls
+import QtQuick 2.0
+import QtQuick.Window 2.0
 
-ApplicationWindow {
+Window {
     visible: true
     width: 640
     height: 480
@@ -17,13 +17,13 @@ ApplicationWindow {
         anchors.centerIn: parent
         spacing: 12
 
-        Button {
-            objectName: "btn_one"
-            text: "Button One"
+        Text {
+            objectName: "label_one"
+            text: "Window One"
         }
-        Button {
-            objectName: "btn_two"
-            text: "Button Two"
+        Text {
+            objectName: "label_two"
+            text: "Window Two"
         }
     }
 }
@@ -31,7 +31,11 @@ ApplicationWindow {
 
 int main(int argc, char * argv[]) {
     QGuiApplication app(argc, argv);
-    QQuickStyle::setStyle("Basic");
+
+    if (app.arguments().contains("--exit-after-startup")) {
+        QThread::msleep(5000);
+        return 0;
+    }
 
     QQmlApplicationEngine engine;
     engine.loadData(QByteArray(QML_SOURCE));

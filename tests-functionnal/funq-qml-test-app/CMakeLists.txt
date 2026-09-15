@@ -29,7 +29,7 @@ else()
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-find_package(${QT} REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2)
+find_package(${QT} REQUIRED COMPONENTS Core Gui Qml Quick)
 message(STATUS "Building funq-qml-test-app with Qt ${${QT}_VERSION}")
 
 set(CMAKE_AUTOMOC ON)
@@ -40,5 +40,4 @@ target_link_libraries(funq-qml-test-app PRIVATE
   ${QT}::Gui
   ${QT}::Qml
   ${QT}::Quick
-  ${QT}::QuickControls2
 )
