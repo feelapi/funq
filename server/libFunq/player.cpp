@@ -142,6 +142,13 @@ QtJson::JsonObject Player::active_widget(const QtJson::JsonObject & command) {
             "NoActiveWindow",
             QString::fromUtf8("There is no active widget (%1)").arg(type));
     }
+
+    if (QWindow * window = qobject_cast<QWindow *>(active)) {
+        window->requestActivate();
+    } else if (QWidget * widget = qobject_cast<QWidget *>(active)) {
+        widget->activateWindow();
+    }
+
     qulonglong id = registerObject(active);
     QtJson::JsonObject result;
     result["oid"] = id;
