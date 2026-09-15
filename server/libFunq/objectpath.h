@@ -51,6 +51,7 @@ QObject * findObject(const QString & path);
 #ifdef QT_QUICK_LIB
 QString quickItemPath(QQuickItem * item);
 QQuickItem * findQuickItem(QQuickWindow * window, const QString & path);
+QList<QQuickItem*> findQuickItems(QQuickWindow * window, const QString & path);
 QQuickItem * findQuickItemById(QQuickItem * root, const QString & qid);
 #endif
 

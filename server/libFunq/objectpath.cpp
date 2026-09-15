@@ -195,6 +195,38 @@ QQuickItem * ObjectPath::findQuickItem(QQuickWindow * window,
     return root;
 }
 
+QList<QQuickItem *> ObjectPath::findQuickItems(QQuickWindow * window,
+                                               const QString & path) {
+    QStringList lstpath = path.split("::");
+    if (lstpath.isEmpty() || !window) {
+        qWarning("Path is empty or no quick window passed");
+        return {};
+    }
+
+    QList<QQuickItem *> current;
+    current << window->contentItem();
+
+    while (!lstpath.isEmpty() && !current.isEmpty()) {
+        QString itemName = lstpath.first();
+        lstpath.removeFirst();
+        QList<QQuickItem *> next;
+        foreach (QQuickItem * parent, current) {
+            foreach (QQuickItem * child, parent->childItems()) {
+                if (ObjectPath::objectName(child) == itemName) {
+                    next.push_back(child);
+                }
+            }
+        }
+        current = next;
+    }
+
+    if (!lstpath.isEmpty()) {
+        return {};
+    }
+
+    return current;
+}
+
 QQuickItem * ObjectPath::findQuickItemById(QQuickItem * root,
                                            const QString & qid) {
     QStringList qids = qid.split(".");
