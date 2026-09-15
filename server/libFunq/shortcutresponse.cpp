@@ -35,6 +35,7 @@ knowledge of the CeCILL v2.1 license and that you accept its terms.
 #include "shortcutresponse.h"
 
 #include "player.h"
+#include "player_utils.h"
 
 #include <QApplication>
 #include <QKeyEvent>

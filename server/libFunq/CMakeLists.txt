@@ -19,8 +19,13 @@ set(
   pick.cpp
   pick.h
   player.cpp
+  player_commands_gitems.cpp
+  player_commands_itemmodel.cpp
+  player_commands_quickitems.cpp
   protocole.cpp
   protocole.h
+  player_utils.cpp
+  player_utils.h
   shortcutresponse.cpp
   shortcutresponse.h
 )
