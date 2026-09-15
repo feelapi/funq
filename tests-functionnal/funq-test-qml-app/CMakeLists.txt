@@ -1,0 +1,37 @@
+cmake_minimum_required(VERSION 3.14)
+
+project(funq-test-qml-app LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+endif()
+
+find_package(Qt6 QUIET COMPONENTS Gui Quick Qml)
+if(Qt6_FOUND)
+  set(QT_VERSION_MAJOR 6)
+else()
+  find_package(Qt5 REQUIRED COMPONENTS Gui Quick Qml)
+  set(QT_VERSION_MAJOR 5)
+endif()
+
+if(QT_VERSION_MAJOR EQUAL 5)
+  qt5_add_resources(QT_RESOURCES resources.qrc)
+  set(QT_LIBRARIES Qt5::Gui Qt5::Quick Qt5::Qml)
+else()
+  qt_add_resources(QT_RESOURCES resources.qrc)
+  set(QT_LIBRARIES Qt6::Gui Qt6::Quick Qt6::Qml)
+endif()
+
+add_executable(${PROJECT_NAME} main.cpp ${QT_RESOURCES})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${QT_LIBRARIES})
+
+set_target_properties(${PROJECT_NAME} PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+  RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}"
+  RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}"
+  RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_BINARY_DIR}"
+  RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_BINARY_DIR}"
+)
