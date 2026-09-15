@@ -76,6 +76,39 @@ QuickItemLocatorContext::QuickItemLocatorContext(
 }
 #endif
 
+#ifdef QT_QUICK_LIB
+void dump_quick_items(Player * player,
+                      const QList<QQuickItem *> & items,
+                      const qulonglong & viewid,
+                      bool recursive,
+                      QtJson::JsonObject & out) {
+    QtJson::JsonArray outitems;
+    foreach (QQuickItem * item, items) {
+        QtJson::JsonObject outitem;
+        qulonglong oid = player->registerObject(item);
+        outitem["oid"] = oid;
+        outitem["viewid"] = viewid;
+        QObject * itemObject = dynamic_cast<QObject *>(item);
+        if (itemObject) {
+            const QMetaObject * mo = itemObject->metaObject();
+            QStringList classes;
+            while (mo) {
+                classes << mo->className();
+                mo = mo->superClass();
+            }
+            outitem["classes"] = classes;
+            outitem["path"] = ObjectPath::objectPath(itemObject);
+        }
+        if (recursive) {
+            dump_quick_items(player, item->childItems(), viewid, recursive,
+                             outitem);
+        }
+        outitems << outitem;
+    }
+    out["items"] = outitems;
+}
+#endif
+
 QtJson::JsonObject Player::quick_item_find(const QtJson::JsonObject & command) {
     QtJson::JsonObject result;
 #ifdef QT_QUICK_LIB
@@ -137,4 +170,22 @@ QtJson::JsonObject Player::quick_item_click(
     Q_UNUSED(command);
     return createQtQuickOnlyError();
 #endif
+}
+
+QtJson::JsonObject Player::quick_item_children(
+    const QtJson::JsonObject & command) {
+    QtJson::JsonObject result;
+#ifdef QT_QUICK_LIB
+    QuickItemLocatorContext ctx(this, command, "oid");
+    if (ctx.hasError()) {
+        return ctx.lastError;
+    }
+
+    bool recursive = command["recursive"].toBool();
+    dump_quick_items(this, ctx.item->childItems(), ctx.id, recursive, result);
+#else
+    Q_UNUSED(command);
+    result = createQtQuickOnlyError();
+#endif
+    return result;
 }
