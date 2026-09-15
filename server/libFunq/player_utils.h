@@ -59,6 +59,23 @@ void mouse_click(T * w, const QPoint & pos, Qt::MouseButton button) {
 }
 
 template <class T>
+void key_click(T * w,
+               Qt::Key key,
+               Qt::KeyboardModifiers modifiers = Qt::NoModifier) {
+    QTest::keyClick(w, key, modifiers, 10);
+}
+
+template <class T>
+void key_press(T * w,
+               Qt::Key key,
+               Qt::KeyboardModifiers modifiers = Qt::NoModifier,
+               int durationMs = 800) {
+    QTest::keyPress(w, key, modifiers, 0);
+    QThread::msleep(durationMs);
+    QTest::keyRelease(w, key, modifiers, 0);
+}
+
+template <class T>
 void mouse_dclick(T * w, const QPoint & pos) {
 #if QT_VERSION_MAJOR >= 6
     QTest::mouseDClick(w, Qt::LeftButton, Qt::NoModifier, pos, 10);

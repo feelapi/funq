@@ -115,8 +115,15 @@ public slots:
     QtJson::JsonObject quit(const QtJson::JsonObject & command);
 
     QtJson::JsonObject quick_item_find(const QtJson::JsonObject & command);
+    QtJson::JsonObject quick_items_find(const QtJson::JsonObject & command);
+    QtJson::JsonObject quick_item_find_by_property(
+        const QtJson::JsonObject & command);
     QtJson::JsonObject quick_item_click(const QtJson::JsonObject & command);
     QtJson::JsonObject quick_item_children(const QtJson::JsonObject & command);
+    QtJson::JsonObject quick_item_key_click(
+        const QtJson::JsonObject & command);
+    QtJson::JsonObject quick_item_key_press(
+        const QtJson::JsonObject & command);
 
 protected:
     QtJson::JsonObject createQtQuickOnlyError() {

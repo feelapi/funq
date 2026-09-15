@@ -35,7 +35,7 @@
 """
 Definition of widgets and models useable in funq.
 """
-from funq.tools import wait_for
+from funq.tools import QtKeyDict, QtKeyboardModifierDict, wait_for
 from funq.errors import FunqError
 import json
 import base64
@@ -937,13 +937,46 @@ class QuickItem(Object):
 
     CPP_CLASS = "QQuickItem"
 
-    def click(self):
+    def click(self, xpos=-1, ypos=-1):
         """
         Click on the :class:`QuickItem`.
         """
         self.client.send_command(
             "quick_item_click",
-            oid=self.oid
+            oid=self.oid,
+            xpos=xpos,
+            ypos=ypos,
+        )
+
+    def dclick(self):
+        """Double-click on the :class:`QuickItem`."""
+        self.client.send_command(
+            "quick_item_click",
+            oid=self.oid,
+            mouseAction="doubleclick",
+        )
+
+    def key_click(self, key, modifiers=()):
+        """Click on the item with a Qt key and optional modifiers."""
+        modifiers_list = [QtKeyboardModifierDict[modifier]
+                          for modifier in modifiers]
+        self.client.send_command(
+            "quick_item_key_click",
+            oid=self.oid,
+            key=QtKeyDict[key],
+            modifiers=modifiers_list,
+        )
+
+    def key_press(self, key, modifiers=(), duration=800):
+        """Press a Qt key on the item for ``duration`` milliseconds."""
+        modifiers_list = [QtKeyboardModifierDict[modifier]
+                          for modifier in modifiers]
+        self.client.send_command(
+            "quick_item_key_press",
+            oid=self.oid,
+            key=QtKeyDict[key],
+            modifiers=modifiers_list,
+            duration=duration,
         )
 
 
@@ -1027,3 +1060,33 @@ class QuickWindow(Widget):
             qid=id,
         )
         return Object.create(self.client, data)
+
+    def find_item_by_property(self, property_name, property_value):
+        """Find the first QML item whose property equals ``property_value``."""
+        data = self.client.send_command(
+            'quick_item_find_by_property',
+            quick_window_oid=self.oid,
+            property_name=property_name,
+            property_value=property_value,
+        )
+        return Object.create(self.client, data)
+
+    def items(self, alias=None, path=None):
+        """Return all QuickItems matching a path or configured alias."""
+        if not (alias or path):
+            raise TypeError("alias or path must be defined")
+
+        if alias and not path:
+            path = self.client.aliases[alias]
+            if not path.startswith(self.path):
+                raise TypeError("alias %r does not belong to this quick window"
+                                % path)
+            path = path[len(self.path) + 2:]
+
+        data = self.client.send_command(
+            'quick_items_find',
+            quick_window_oid=self.oid,
+            path=path,
+        )
+        return [Object.create(self.client, item)
+                for item in data.get('items', [])]
