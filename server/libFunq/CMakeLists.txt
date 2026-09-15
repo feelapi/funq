@@ -45,3 +45,6 @@ target_link_libraries(FunqStatic PUBLIC ${FUNQ_DEPENDENCIES})
 
 add_library(Funq SHARED ${FUNQ_SOURCES})
 target_link_libraries(Funq PUBLIC ${FUNQ_DEPENDENCIES})
+if(WIN32)
+    set_target_properties(Funq PROPERTIES OUTPUT_NAME "libFunq")
+endif()
