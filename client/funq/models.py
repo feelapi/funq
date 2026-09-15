@@ -932,7 +932,8 @@ class QuickItem(Object):
     Represent a QQuickItem or derived.
 
     You can get a :class:`QuickItem` instance by using
-    :meth:`QuickWindow.item`.
+    :meth:`QuickWindow.item` or by iterating over
+    :meth:`QuickItem.children` results.
     """
 
     CPP_CLASS = "QQuickItem"
@@ -978,6 +979,32 @@ class QuickItem(Object):
             modifiers=modifiers_list,
             duration=duration,
         )
+
+    def children(self, recursive=False):
+        """Return the item's direct or recursive child items.
+
+        :param recursive: when ``True``, include descendants recursively.
+        """
+        data = self.client.send_command(
+            "quick_item_children",
+            oid=self.oid,
+            recursive=recursive,
+        )
+        return QuickItems.create(self.client, data)
+
+    @classmethod
+    def create(cls, client, data):
+        self = super(QuickItem, cls).create(client, data)
+        self.items = [cls.create(client, item)
+                      for item in data.get('items', [])]
+        return self
+
+
+class QuickItems(TreeItems):
+
+    """Container for child :class:`QuickItem` objects."""
+
+    ITEM_CLASS = QuickItem
 
 
 class QuickWindow(Widget):
@@ -1059,7 +1086,7 @@ class QuickWindow(Widget):
             path=path,
             qid=id,
         )
-        return Object.create(self.client, data)
+        return QuickItem.create(self.client, data)
 
     def find_item_by_property(self, property_name, property_value):
         """Find the first QML item whose property equals ``property_value``."""
