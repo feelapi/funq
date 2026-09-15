@@ -4,3 +4,4 @@ prune doc/_build
 include funq/aliases-gkits.conf
 
 include LICENCE.txt LICENCE-fr.txt
+include README.md

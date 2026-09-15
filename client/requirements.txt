@@ -1,0 +1,6 @@
+﻿# 旧版 nose 测试入口仍然需要此依赖。
+nose
+
+# 推荐的 pytest 测试入口和 funq pytest 插件需要此依赖。
+pytest
+

@@ -15,7 +15,7 @@ Requirements
 ------------
 
 You must have installed funq and funq-server compiled with Qt5. Please refer
-to the README.rst file about it.
+to the readme.md file about it.
 
 
 Create the test folder
