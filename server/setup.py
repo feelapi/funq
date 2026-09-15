@@ -36,7 +36,7 @@ class build_libfunq(Command):
         ('cmake-path=', None, "path to the cmake executable"),
         ('make-path=', None, "path to the make executable"),
         ('debug', 'g',
-         "compile/link with debugging information"),
+         "compile/link with debugging information (default: OFF)"),
         ('inplace', 'i',
          "ignore build-lib and put compiled extensions into the source " +
          "directory alongside your pure Python modules"),
@@ -48,7 +48,7 @@ class build_libfunq(Command):
         self.build_lib = None
         self.force = None
         self.inplace = None
-        self.debug = None
+        self.debug = None  # ✅ 修改：从 True 改为 None，表示未设置
         self.cmake_path = None
         self.make_path = None
         self.qt_version = None
@@ -65,6 +65,23 @@ class build_libfunq(Command):
                                    ('force', 'force'),
                                    ('debug', 'debug'),
                                    ('build_lib', 'build_lib'))
+        
+        # ✅ 新增：Debug 模式灵活切换逻辑
+        # 优先级：命令行参数 > 环境变量 > 默认(False)
+        if self.debug is None:
+            # 检查环境变量
+            env_debug = os.environ.get('FUNQ_DEBUG')
+            if env_debug:
+                # 支持多种环境变量值：1, true, True, yes, Yes
+                self.debug = env_debug.lower() in ('1', 'true', 'yes')
+            else:
+                # 默认使用 Release 版本（生产环境友好）
+                self.debug = False
+        
+        # ✅ 打印构建类型提示
+        build_type = 'Debug' if self.debug else 'Release'
+        print(f'Building {build_type} version...')
+        
         if self.cmake_path is None:
             self.cmake_path = os.environ.get('FUNQ_CMAKE_PATH') or 'cmake'
         if self.make_path is None:
@@ -77,27 +94,59 @@ class build_libfunq(Command):
         return os.path.join(funqlib_base_dir, 'funq_server', self.funqlib_name)
 
     def run(self):
-        if self.force:
-            subprocess.call([self.make_path, 'clean'], shell=True)
+        # 根据构建类型设置路径
         buildtype = 'Debug' if self.debug else 'Release'
-        cmake_cmd = [
-            self.cmake_path, '.',
-            '-DCMAKE_BUILD_TYPE={}'.format(buildtype),
-        ]
-        if self.qt_version is not None:
-            cmake_cmd += ['-DQT_MAJOR_VERSION={}'.format(self.qt_version)]
-        print('running %s' % cmake_cmd)
-        subprocess.check_call(cmake_cmd)
+        
+        # 使用动态路径
+        src_path = os.path.join('libFunq', buildtype, self.funqlib_name)
+        if os.path.exists(src_path) and not self.force:
+            print('Using pre-built library: %s' % src_path)
+        else:
+            if self.force:
+                # Windows 用 cmake 清理，其他用 make
+                if IS_WINDOWS:
+                    subprocess.call([self.cmake_path, '--build', '.', '--config', buildtype, '--clean-first'], shell=True)
+                else:
+                    subprocess.call([self.make_path, 'clean'], shell=True)
+            
+            cmake_cmd = [
+                self.cmake_path, '.',
+                '-DCMAKE_BUILD_TYPE={}'.format(buildtype),
+            ]
+            
+            # Windows 上指定 Visual Studio 生成器和架构
+            if IS_WINDOWS:
+                cmake_cmd.extend(['-G', 'Visual Studio 17 2022', '-A', 'x64'])
+            
+            if self.qt_version is not None:
+                cmake_cmd += ['-DQT_MAJOR_VERSION={}'.format(self.qt_version)]
+            print('running %s' % cmake_cmd)
+            subprocess.check_call(cmake_cmd)
 
-        make_cmd = [self.make_path]
-        print('running %s' % make_cmd)
-        subprocess.check_call(make_cmd, shell=True)
+            # Windows 用 cmake --build，其他用 make
+            if IS_WINDOWS:
+                make_cmd = [self.cmake_path, '--build', '.', '--config', buildtype]
+            else:
+                make_cmd = [self.make_path]
+            print('running %s' % make_cmd)
+            subprocess.check_call(make_cmd, shell=True)
 
         lib_path = self.funqlib_out_path()
         lib_dir = os.path.dirname(lib_path)
         if not os.path.isdir(lib_dir):
             os.makedirs(lib_dir)
-        shutil.copy2(os.path.join('libFunq', self.funqlib_name), lib_path)
+        
+        # 使用动态路径复制
+        if IS_WINDOWS:
+            src_path = os.path.join('libFunq', buildtype, self.funqlib_name)
+        else:
+            src_path = os.path.join('libFunq', self.funqlib_name)
+        
+        if os.path.exists(src_path):
+            shutil.copy2(src_path, lib_path)
+            print('Copied %s to %s' % (src_path, lib_path))
+        else:
+            raise FileNotFoundError('Could not find built library at: %s' % src_path)
 
     def get_outputs(self):
         return [self.funqlib_out_path()]
