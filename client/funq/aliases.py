@@ -55,29 +55,25 @@ def set_gkit_aliases(funqaliases, gkit_file, gkit):
 
 
 class HooqAliases(dict):
-
     """
     A specialized dict for aliases.
     """
 
     def __setitem__(self, name, value):
         if name in self:
-            raise HooqAliasesKeyError("The alias `%s` already exists."
-                                      % name)
+            raise HooqAliasesKeyError(f"The alias `{name}` already exists.")
         try:
-            # pylint: disable=W0142
             value = value.format(**self)
         except KeyError as msg:
             raise HooqAliasesKeyError("Impossible substitution in"
-                                      " the alias %s: %s." % (name, msg))
+                                      f" the alias {name}: {msg}.")
         dict.__setitem__(self, name, value)
 
     def __getitem__(self, name):
         try:
             return dict.__getitem__(self, name)
         except KeyError:
-            raise HooqAliasesKeyError("The alias `%s` does not exists."
-                                      % name)
+            raise HooqAliasesKeyError(f"The alias `{name}` does not exists.")
 
     @classmethod
     def from_file(cls, path, gkit_file=None, gkit='default'):
@@ -94,13 +90,12 @@ class HooqAliases(dict):
                 num_line += 1
                 if not line or line.startswith('#'):
                     continue
-                else:
-                    try:
-                        key, value = line.split('=', 1)
-                    except ValueError:
-                        raise HooqAliasesInvalidLineError(
-                            "The alias file `%s` contains a"
-                            " syntax error on line %d."
-                            % (path, num_line))
+
+                try:
+                    key, value = line.split('=', 1)
+                except ValueError:
+                    raise HooqAliasesInvalidLineError(
+                        f"The alias file `{path}` contains a"
+                        f" syntax error on line {num_line}.")
                 self[key.strip()] = value.strip()
         return self

@@ -55,8 +55,7 @@ from funq.errors import FunqError, TimeOutError
 LOG = logging.getLogger('funq.client')
 
 
-class FunqClient(object):
-
+class FunqClient():
     """
     Allow to communicate with a libFunq server.
 
@@ -130,7 +129,7 @@ class FunqClient(object):
         """
         kwargs['action'] = action
         rawdata = json.dumps(kwargs).encode('utf-8')
-        header = '{}\n'.format(len(rawdata)).encode('utf-8')
+        header = f'{len(rawdata)}\n'.encode('utf-8')
         message = header + rawdata
         f = self._fsocket
         f.write(message)
@@ -148,8 +147,8 @@ class FunqClient(object):
         header = f.readline()
         if not header:
             raise FunqError("NoResponseFromApplication",
-                            "Pas de réponse de l'application testée -"
-                            " probablement un crash.")
+                            "No response from the tested application"
+                            " - probably a crash.")
         to_read = int(header)
         response = json.loads(f.read(to_read).decode('utf-8'))
         if response.get('success') is False:
@@ -187,20 +186,17 @@ class FunqClient(object):
         if alias:
             path = self.aliases[alias]
 
-        wdata = [None]
-
         def get_action():
             """ Try to get the action """
             try:
-                wdata[0] = self.send_command('widget_by_path', path=path)
-                return True
+                return True, self.send_command('widget_by_path', path=path)
             except FunqError as err:
                 if err.classname != 'InvalidWidgetPath':
                     raise
                 return err
-        wait_for(get_action, timeout, timeout_interval)
+        wdata = wait_for(get_action, timeout, timeout_interval)
 
-        action = Action.create(self, wdata[0])
+        action = Action(self, wdata)
         if wait_active:
             action.wait_for_properties({'enabled': True, 'visible': True})
         return action
@@ -230,22 +226,19 @@ class FunqClient(object):
         if alias:
             path = self.aliases[alias]
 
-        wdata = [None]
-
         def get_widget():
             """ Try to get the widget """
             try:
-                wdata[0] = self.send_command('widget_by_path', path=path)
-                return True
+                return True, self.send_command('widget_by_path', path=path)
             except FunqError as err:
                 if err.classname != 'InvalidWidgetPath':
                     raise
                 return err
-        wait_for(get_widget, timeout, timeout_interval)
+        wdata = wait_for(get_widget, timeout, timeout_interval)
 
-        widget = Widget.create(self, wdata[0])
+        widget = Widget(self, wdata)
         if wait_active:
-            if 'QWindow' in wdata[0]['classes']:
+            if 'QWindow' in wdata['classes']:
                 # QWindow (Qt5) does not have the enabled property
                 props = {'active': True, 'visible': True}
             else:
@@ -280,22 +273,20 @@ class FunqClient(object):
         :param wait_active: If true - the default -, wait until the widget
                             become visible and enabled.
         """
-        wdata = [None]
 
         def get_widget():
             """ Try to get the widget """
             try:
-                wdata[0] = self.send_command('active_widget', type=widget_type)
-                return True
+                return True, self.send_command('active_widget', type=widget_type)
             except FunqError as err:
                 if err.classname != 'NoActiveWindow':
                     raise
                 return err
-        wait_for(get_widget, timeout, timeout_interval)
+        wdata = wait_for(get_widget, timeout, timeout_interval)
 
-        widget = Widget.create(self, wdata[0])
+        widget = Widget(self, wdata)
         if wait_active:
-            if 'QWindow' in wdata[0]['classes']:
+            if 'QWindow' in wdata['classes']:
                 # QWindow (Qt5) does not have the enabled property
                 props = {'active': True, 'visible': True}
             else:
@@ -303,12 +294,26 @@ class FunqClient(object):
             widget.wait_for_properties(props)
         return widget
 
-    def widgets_list(self, with_properties=False):
+    def _list_commands(self):
+        """
+        Returns a dict with available commands.
+        """
+        return self.send_command('list_commands')
+
+    def actions_list(self, with_properties=False):
+        """
+        Returns a dict with every actions in the application.
+        """
+        return self.send_command('actions_list',
+                                 with_properties=with_properties)
+
+    def widgets_list(self, with_properties=False, recursive=True):
         """
         Returns a dict with every widgets in the application.
         """
         return self.send_command('widgets_list',
-                                 with_properties=with_properties)
+                                 with_properties=with_properties,
+                                 recursive=recursive)
 
     def dump_widgets_list(self, stream='widgets_list.json',
                           with_properties=False):
@@ -328,7 +333,7 @@ class FunqClient(object):
         if isinstance(stream, str):
             stream = open(stream, 'wb')
         raw = base64.standard_b64decode(data['data'])
-        stream.write(raw)  # pylint: disable=E1103
+        stream.write(raw)
 
     def keyclick(self, text):
         """
@@ -378,8 +383,7 @@ class FunqClient(object):
                           destpos=dest_pos)
 
 
-class ApplicationContext(object):  # pylint: disable=R0903
-
+class ApplicationContext():  # pylint: disable=R0903
     """
     This is the context of a tested application.
 
@@ -461,13 +465,13 @@ class ApplicationContext(object):  # pylint: disable=R0903
         cmd.extend(appconfig.args)
 
         LOG.info("The tested application will be launched in the"
-                 " directory %r with the command %r", appconfig.cwd, cmd)
+                 f" directory {appconfig.cwd} with the command {cmd}")
         self._process = subprocess.Popen(cmd,
                                          cwd=appconfig.cwd,
                                          stdout=stdout,
                                          stderr=stderr,
                                          env=env)
-        LOG.info("Launching tested application [%s].", self._process.pid)
+        LOG.info(f"Launching tested application [{self._process.pid}].")
 
     def _kill_process(self):
         """
@@ -481,8 +485,8 @@ class ApplicationContext(object):  # pylint: disable=R0903
                 pass
             if self._process.returncode is None:
                 # application seems blocked ! try to terminate it ...
-                LOG.warn("The tested application [%s] can not be stopped"
-                         " nicely.", self._process.pid)
+                LOG.warning(f"The tested application [{self._process.pid}]"
+                            " can not be stopped nicely.")
                 self._process.terminate()
                 self._process.wait()
             self._process = None
@@ -502,15 +506,14 @@ class ApplicationContext(object):  # pylint: disable=R0903
                     pass
                 if self._process.returncode is not None:
                     # process terminated unexpectedly (-11: SegFault)
-                    LOG.critical("The tested application [%s] has terminated"
-                                 " unexpectedly (return code: %s)",
-                                 self._process.pid, self._process.returncode)
+                    LOG.critical(f"The tested application [{self._process.pid}]"
+                                 " has terminated unexpectedly"
+                                 f" (return code: {self._process.returncode})")
                     self._process = None
                 else:
                     # try to exit nicely the tested application process
                     # with a call to qApp->exit().
-                    LOG.info("Closing tested application [%s].",
-                             self._process.pid)
+                    LOG.info(f"Closing tested application [{self._process.pid}].")
                     try:
                         self.funq.quit()
                     except socket.error:
@@ -526,8 +529,7 @@ class ApplicationContext(object):  # pylint: disable=R0903
         self.terminate()
 
 
-class ApplicationConfig(object):  # pylint: disable=R0902
-
+class ApplicationConfig():
     """
     This object hold the configuration of the application to test, mostly
     retrieved from the funq configuration file.
@@ -660,8 +662,7 @@ class ApplicationConfig(object):  # pylint: disable=R0902
         return cls(executable, **kwargs)
 
 
-class ApplicationRegistry(object):
-
+class ApplicationRegistry():
     """
     Handle multiple :class:`ApplicationConfig`. A global instance is
     used in :mod:`funq.noseplugin` to keep every configuration defined

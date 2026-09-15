@@ -45,7 +45,7 @@ import codecs
 LOG = logging.getLogger('funq.screenshoter')
 
 
-class ScreenShoter(object):  # pylint: disable=R0903
+class ScreenShoter():
 
     """
     Object that can take screenshots.
@@ -67,7 +67,7 @@ class ScreenShoter(object):  # pylint: disable=R0903
         if not os.path.isdir(self.working_folder):
             os.makedirs(self.working_folder)
 
-        bname = '{0}.png'.format(next(self.counter))
+        bname = f'{next(self.counter)}.png'
         fname = os.path.join(self.working_folder, bname)
 
         try:
@@ -75,9 +75,8 @@ class ScreenShoter(object):  # pylint: disable=R0903
         except (SystemExit, KeyboardInterrupt):
             raise
         except Exception:
-            LOG.exception("impossible de prendre un screenshot pour"
-                          " %s", longname)
+            LOG.exception(f"impossible to take a screenshot {longname}")
             return
 
         with codecs.open(self.txt_file_path, "a", "utf-8") as f:
-            f.write("{0}: {1}\n".format(bname, longname))
+            f.write(f"{bname}: {longname}\n")
