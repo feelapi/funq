@@ -266,16 +266,22 @@ QtJson::JsonObject Player::widget_click(const QtJson::JsonObject & command) {
         return ctx.lastError;
     }
     QString action = command["mouseAction"].toString();
-    QPoint pos = ctx.widget->rect().center();
-    if (action == "doubleclick") {
-        mouse_dclick(ctx.widget, pos);
-    } else if (action == "rightclick") {
-        mouse_click(ctx.widget, pos, Qt::RightButton);
-    } else if (action == "middleclick") {
-        mouse_click(ctx.widget, pos, Qt::MiddleButton);
-    } else {
-        mouse_click(ctx.widget, pos, Qt::LeftButton);
-    }
+    const auto click = [widget = ctx.widget, action] {
+        const QPoint pos = widget->rect().center();
+        if (action == "doubleclick") {
+            mouse_dclick(widget, pos);
+        } else if (action == "rightclick") {
+            mouse_click(widget, pos, Qt::RightButton);
+        } else if (action == "middleclick") {
+            mouse_click(widget, pos, Qt::MiddleButton);
+        } else {
+            mouse_click(widget, pos, Qt::LeftButton);
+        }
+    };
+    if (command.contains("blocking") && !command["blocking"].toBool())
+        QTimer::singleShot(0, ctx.widget, click);
+    else
+        click();
     QtJson::JsonObject result;
     return result;
 }

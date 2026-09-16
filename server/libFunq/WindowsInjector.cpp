@@ -49,10 +49,19 @@ static void inject() {
     Funq::activate();
 }
 
-extern "C" int __stdcall DllMain(HINSTANCE, DWORD fdwReason, LPVOID) {
+static DWORD WINAPI inject_thread(LPVOID) {
+    inject();
+    return 0;
+}
+
+extern "C" int __stdcall DllMain(HINSTANCE hInstance, DWORD fdwReason, LPVOID) {
     switch (fdwReason) {
         case DLL_PROCESS_ATTACH:
-            inject();
+            // DllMain runs under the Windows loader lock.  Starting Qt from
+            // here can deadlock LoadLibraryW, so defer Funq initialization
+            // until the loader has finished attaching this DLL.
+            DisableThreadLibraryCalls(hInstance);
+            CreateThread(nullptr, 0, inject_thread, nullptr, 0, nullptr);
             break;
         case DLL_PROCESS_DETACH:
             break;

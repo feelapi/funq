@@ -69,6 +69,11 @@ def wait_for(func, timeout, timeout_interval=0.1):
         res = func()
         if res is True:
             return True
+        # Some client lookups need to return both the ready state and the
+        # resolved object.  Preserve that value while retaining the original
+        # boolean wait_for contract.
+        if isinstance(res, tuple) and len(res) == 2 and res[0] is True:
+            return res[1]
         if elapsed >= timeout:
             if isinstance(res, Exception):
                 raise res

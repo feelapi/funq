@@ -270,7 +270,7 @@ class Widget(Object):
     Allow to manipulate a QWidget or derived.
     """
 
-    def click(self, wait_for_enabled=10.0, btn='left'):
+    def click(self, wait_for_enabled=10.0, btn='left', blocking=True):
         """
         Click on the widget.
 
@@ -294,7 +294,8 @@ class Widget(Object):
             raise ValueError('Invalid mouse button: %s', btn)
         self.client.send_command('widget_click',
                                  oid=self.oid,
-                                 mouseAction=action)
+                                 mouseAction=action,
+                                 blocking=blocking)
 
     def dclick(self, wait_for_enabled=10.0):
         """

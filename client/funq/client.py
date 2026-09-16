@@ -196,7 +196,7 @@ class FunqClient():
                 return err
         wdata = wait_for(get_action, timeout, timeout_interval)
 
-        action = Action(self, wdata)
+        action = Action.create(self, wdata)
         if wait_active:
             action.wait_for_properties({'enabled': True, 'visible': True})
         return action
@@ -236,7 +236,7 @@ class FunqClient():
                 return err
         wdata = wait_for(get_widget, timeout, timeout_interval)
 
-        widget = Widget(self, wdata)
+        widget = Widget.create(self, wdata)
         if wait_active:
             if 'QWindow' in wdata['classes']:
                 # QWindow (Qt5) does not have the enabled property
@@ -284,7 +284,7 @@ class FunqClient():
                 return err
         wdata = wait_for(get_widget, timeout, timeout_interval)
 
-        widget = Widget(self, wdata)
+        widget = Widget.create(self, wdata)
         if wait_active:
             if 'QWindow' in wdata['classes']:
                 # QWindow (Qt5) does not have the enabled property
@@ -487,8 +487,24 @@ class ApplicationContext():  # pylint: disable=R0903
                 # application seems blocked ! try to terminate it ...
                 LOG.warning(f"The tested application [{self._process.pid}]"
                             " can not be stopped nicely.")
-                self._process.terminate()
-                self._process.wait()
+                if os.name == 'nt':
+                    # The Windows injector starts the CAD application as a
+                    # child of the Funq runner.  Terminating only the runner
+                    # leaves that child alive for the next test.
+                    subprocess.run(
+                        ['taskkill', '/PID', str(self._process.pid),
+                         '/T', '/F'],
+                        check=False,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                    )
+                else:
+                    self._process.terminate()
+                try:
+                    self._process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    self._process.kill()
+                    self._process.wait()
             self._process = None
 
     def terminate(self):

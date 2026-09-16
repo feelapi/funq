@@ -45,6 +45,12 @@ def test_wait_for():
     assert_true(tools.wait_for(func, 0.0))
 
 
+def test_wait_for_value():
+    def func():
+        return True, "resolved"
+    assert_equals("resolved", tools.wait_for(func, 0.0))
+
+
 @raises(tools.TimeOutError)
 def test_wait_for_timeout():
     def func():

@@ -257,7 +257,12 @@ class BaseTestCase(unittest.TestCase, metaclass=MetaParameterized):
         self.addCleanup(self.__delete_funq_ctx)
 
     def __delete_funq_ctx(self):
+        context = self.__ctx
         del self.__ctx
+        contexts = context.values() if isinstance(context, dict) else (context,)
+        for value in contexts:
+            if value is not None:
+                value.terminate()
 
     def id(self):
         cls = self.__class__
