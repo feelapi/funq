@@ -29,10 +29,12 @@ set(
   shortcutresponse.cpp
   shortcutresponse.h
 )
-if(WIN32)
-  list(APPEND FUNQ_SOURCES WindowsInjector.cpp WindowsInjector.h)
-else()
-  list(APPEND FUNQ_SOURCES ldPreloadInjector.cpp)
+if(FUNQ_BUILD_INJECTOR)
+  if(WIN32)
+    list(APPEND FUNQ_SOURCES WindowsInjector.cpp WindowsInjector.h)
+  else()
+    list(APPEND FUNQ_SOURCES ldPreloadInjector.cpp)
+  endif()
 endif()
 
 set(
@@ -48,8 +50,10 @@ set(
 add_library(FunqStatic STATIC ${FUNQ_SOURCES})
 target_link_libraries(FunqStatic PUBLIC ${FUNQ_DEPENDENCIES})
 
-add_library(Funq SHARED ${FUNQ_SOURCES})
-target_link_libraries(Funq PUBLIC ${FUNQ_DEPENDENCIES})
-if(WIN32)
-    set_target_properties(Funq PROPERTIES OUTPUT_NAME "libFunq")
+if(FUNQ_BUILD_INJECTOR)
+  add_library(Funq SHARED ${FUNQ_SOURCES})
+  target_link_libraries(Funq PUBLIC ${FUNQ_DEPENDENCIES})
+  if(WIN32)
+      set_target_properties(Funq PROPERTIES OUTPUT_NAME "libFunq")
+  endif()
 endif()

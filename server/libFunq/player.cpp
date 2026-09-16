@@ -266,8 +266,12 @@ QtJson::JsonObject Player::widget_click(const QtJson::JsonObject & command) {
         return ctx.lastError;
     }
     QString action = command["mouseAction"].toString();
-    const auto click = [widget = ctx.widget, action] {
-        const QPoint pos = widget->rect().center();
+    QPoint pos = ctx.widget->rect().center();
+    if (command.contains("x") && command.contains("y")
+        && !command["x"].isNull() && !command["y"].isNull()) {
+        pos = QPoint(command["x"].toInt(), command["y"].toInt());
+    }
+    const auto click = [widget = ctx.widget, action, pos] {
         if (action == "doubleclick") {
             mouse_dclick(widget, pos);
         } else if (action == "rightclick") {

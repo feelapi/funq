@@ -12,6 +12,9 @@ option(BUILD_TESTS "Build tests." OFF)
 option(BUILD_DISALLOW_WARNINGS
        "Disallow compiler warnings during build (build with -Werror)." OFF
 )
+option(FUNQ_BUILD_INJECTOR
+       "Build the shared-library injection entry point." ON
+)
 
 # Create a release build by default
 # (Code based on https://blog.kitware.com/cmake-and-the-default-build-type/)
